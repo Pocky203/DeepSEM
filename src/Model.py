@@ -5,8 +5,8 @@ from torch import nn
 from torch.autograd import Variable
 from torch.nn import init
 
-Tensor = torch.cuda.FloatTensor
-
+# Tensor = torch.cuda.FloatTensor
+Tensor = torch.FloatTensor
 
 def kl_loss(z_mean, z_stddev):
     mean_sq = z_mean * z_mean
@@ -35,8 +35,9 @@ class LossFunctions:
         if self.eps > 0.0:
             var = var + self.eps
         return -0.5 * torch.mean(
-            torch.log(torch.FloatTensor([2.0 * np.pi]).cuda()).sum(0) + torch.log(var) + torch.pow(x - mu, 2) / var, dim=-1)
-
+            #torch.log(torch.FloatTensor([2.0 * np.pi]).cuda()).sum(0) + torch.log(var) + torch.pow(x - mu, 2) / var, dim=-1)
+            torch.log(torch.FloatTensor([2.0 * np.pi])).sum(0) + torch.log(var) + torch.pow(x - mu, 2) / var, dim=-1)
+            
     def gaussian_loss(self, z, z_mu, z_var, z_mu_prior, z_var_prior):
         loss = self.log_normal(z, z_mu, z_var) - self.log_normal(z, z_mu_prior, z_var_prior)
         return loss.mean()
@@ -197,7 +198,10 @@ class VAE_EAD(nn.Module):
     def forward(self, x, dropout_mask, temperature=1.0, opt=None, ):
         x_ori = x
         x = x.view(x.size(0), -1, 1)
-        mask = Variable(torch.from_numpy(np.ones(self.n_gene) - np.eye(self.n_gene)).float(), requires_grad=False).cuda()
+
+        # mask = Variable(torch.from_numpy(np.ones(self.n_gene) - np.eye(self.n_gene)).float(), requires_grad=False).cuda()
+        mask = Variable(torch.from_numpy(np.ones(self.n_gene) - np.eye(self.n_gene)).float(), requires_grad=False)
+
         adj_A_t = self._one_minus_A_t(self.adj_A * mask)
         adj_A_t_inv = torch.inverse(adj_A_t)
         out_inf = self.inference(x, adj_A_t, temperature)

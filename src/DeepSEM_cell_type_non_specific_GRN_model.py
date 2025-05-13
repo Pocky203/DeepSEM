@@ -12,14 +12,15 @@ from torch.utils.data.dataset import TensorDataset
 from src.Model import VAE_EAD
 from src.utils import evaluate, extractEdgesFromMatrix
 
-Tensor = torch.cuda.FloatTensor
-
+# Tensor = torch.cuda.FloatTensor
+Tensor = torch.FloatTensor
 
 class non_celltype_GRN_model:
     def __init__(self, opt):
         self.opt = opt
+        save_dir = os.path.join("results", opt.save_name)
         try:
-            os.mkdir(opt.save_name)
+            os.makedirs(save_dir, exist_ok=True)  # 更健壮，递归创建路径
         except:
             print('dir exist')
 
@@ -68,7 +69,10 @@ class non_celltype_GRN_model:
         opt = self.opt
         dataloader, Evaluate_Mask, num_nodes, num_genes, data, truth_edges, TFmask2, gene_name = self.init_data()
         adj_A_init = self.initalize_A(data)
-        vae = VAE_EAD(adj_A_init, 1, opt.n_hidden, opt.K).float().cuda()
+        
+        # vae = VAE_EAD(adj_A_init, 1, opt.n_hidden, opt.K).float().cuda()
+        vae = VAE_EAD(adj_A_init, 1, opt.n_hidden, opt.K).float()
+
         optimizer = optim.RMSprop(vae.parameters(), lr=opt.lr)
         optimizer2 = optim.RMSprop([vae.adj_A], lr=opt.lr * 0.2)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=opt.lr_step_size, gamma=opt.gamma)
@@ -107,4 +111,4 @@ class non_celltype_GRN_model:
                       np.mean(loss_all), 'mse_loss:', np.mean(mse_rec), 'kl_loss:', np.mean(loss_kl), 'sparse_loss:',
                       np.mean(loss_sparse))
         extractEdgesFromMatrix(vae.adj_A.cpu().detach().numpy(), gene_name, TFmask2).to_csv(
-            opt.save_name + '/GRN_inference_result.tsv', sep='\t', index=False)
+            'results/' + opt.save_name + '/GRN_inference_result.tsv', sep='\t', index=False)
